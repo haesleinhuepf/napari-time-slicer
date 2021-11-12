@@ -8,19 +8,19 @@
 [![napari hub](https://img.shields.io/endpoint?url=https://api.napari-hub.org/shields/napari-time-slicer)](https://napari-hub.org/plugins/napari-time-slicer)
 
 A meta plugin for processing timelapse data timepoint by timepoint. It 
-enables a list of napari plugins to process the 2D data step by step once the user goes 
+enables a list of napari plugins to process 2D+t or 3D+t data step by step when the user goes 
 through the timelapse. Currently, these plugins are using `napari-time-slicer`:
 * [napari-segment-blobs-and-things-with-membranes](https://www.napari-hub.org/plugins/napari-segment-blobs-and-things-with-membranes)
 * [napari-cupy-image-processing](https://www.napari-hub.org/plugins/napari-cupy-image-processing)
 * [napari-pyclesperanto-assistant](https://www.napari-hub.org/plugins/napari-pyclesperanto-assistant)
 
-`napari-time-slicer` enables inter-plugin communication, e.g. allowing to combing the three plugins listed above in 
+`napari-time-slicer` enables inter-plugin communication, e.g. allowing to combine the three plugins listed above in 
 one image processing workflow for segmenting a timelapse dataset:
 
 ![](https://github.com/haesleinhuepf/napari-time-slicer/raw/main/images/screencast.gif)
 
-If you want to process a 3D dataset into as 2D + time dataset, convert it using the 
-menu `Tools > Utilities > Convert 3D stack to 2D timelapse (time-slicer)`. It will convert the 3D dataset to a 4D datset
+If you want to convert a 3D dataset into as 2D + time dataset, use the 
+menu `Tools > Utilities > Convert 3D stack to 2D timelapse (time-slicer)`. It will turn the 3D dataset to a 4D datset
 where the Z-dimension (index 1) has only 1 element, which will in napari be displayed with a time-slider. Note: It is 
 recommended to remove the original 3D dataset after this conversion.
 
