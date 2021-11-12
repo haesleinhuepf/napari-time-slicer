@@ -17,7 +17,7 @@ through the timelapse. Currently, these plugins are using `napari-time-slicer`:
 `napari-time-slicer` enables inter-plugin communication, e.g. allowing to combing the three plugins listed above in 
 one image processing workflow for segmenting a timelapse dataset:
 
-![](images/screencast.gif)
+![](https://github.com/haesleinhuepf/napari-time-slicer/raw/main/images/screencast.gif)
 
 If you want to process a 3D dataset into as 2D + time dataset, convert it using the 
 menu `Tools > Utilities > Convert 3D stack to 2D timelapse (time-slicer)`. It will convert the 3D dataset to a 4D datset
