@@ -13,8 +13,9 @@ through the timelapse. Currently, these plugins are using `napari-time-slicer`:
 * [napari-segment-blobs-and-things-with-membranes](https://www.napari-hub.org/plugins/napari-segment-blobs-and-things-with-membranes)
 * [napari-cupy-image-processing](https://www.napari-hub.org/plugins/napari-cupy-image-processing)
 * [napari-pyclesperanto-assistant](https://www.napari-hub.org/plugins/napari-pyclesperanto-assistant)
+* [napari-accelerated-pixel-and-object-classification](https://www.napari-hub.org/plugins/napari-accelerated-pixel-and-object-classification)
 
-`napari-time-slicer` enables inter-plugin communication, e.g. allowing to combine the three plugins listed above in 
+`napari-time-slicer` enables inter-plugin communication, e.g. allowing to combine the plugins listed above in 
 one image processing workflow for segmenting a timelapse dataset:
 
 ![](https://github.com/haesleinhuepf/napari-time-slicer/raw/main/images/screencast.gif)
