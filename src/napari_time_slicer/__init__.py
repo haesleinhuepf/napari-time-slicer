@@ -46,7 +46,10 @@ def time_slicer(function: Callable) -> Callable:
                 for i, (key, value) in enumerate(bound.arguments.items()):
                     if isinstance(value, np.ndarray) or str(type(value)) in ["<class 'cupy._core.core.ndarray'>", "<class 'dask.array.core.Array'>"]:
                         if len(value.shape) == 4:
-                            bound.arguments[key] = value[current_timepoint]
+                            new_value = value[current_timepoint]
+                            if new_value.shape[0] == 1:
+                                new_value = new_value[0]
+                            bound.arguments[key] = new_value
 
                         # setup an event that update computation in case the input-data changes
                         layer = _get_layer_from_data(viewer, value)
