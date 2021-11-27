@@ -22,7 +22,7 @@ one image processing workflow for segmenting a timelapse dataset:
 ![](https://github.com/haesleinhuepf/napari-time-slicer/raw/main/images/screencast1.gif)
 
 The workflow can then also be exported as a script. The 'Generate Code' button can be found in the `Workflow Viewer`
-that opens when clicking the menu `Tools > Visualization > Workflow Viewer`.
+that opens when clicking the menu `Tools > Visualization > Workflow Viewer` if the [napari-script-editor](https://www.napari-hub.org/plugins/napari-script-editor) is installed.
 
 ![](https://github.com/haesleinhuepf/napari-time-slicer/raw/main/images/screencast2.gif)
 
@@ -34,7 +34,7 @@ recommended to remove the original 3D dataset after this conversion.
 
 ## Usage for plugin developers
 
-Plugins which implement the `napari_experimental_provide_function` hook can make use the `@time_slicer`. At the moment,
+Plugins which implement the `napari_experimental_provide_function` hook can make use of the `@time_slicer`. At the moment,
 only functions which take `napari.types.ImageData`, `napari.types.LabelsData` and basic python types such as `int` 
 and `float` are supported. If you annotate such a function with `@time_slicer` it will internally convert any 4D dataset
 to a 3D dataset according to the timepoint currently selected in napari. Furthermore, when the napari user changes the
