@@ -29,7 +29,6 @@ class WorkflowWidget(QWidget):
 
         @self.timer.timeout.connect
         def update_layer(*_):
-            #print("update")
             from ._workflow import WorkflowManager
             workflow = WorkflowManager.install(napari_viewer).workflow
 
@@ -42,7 +41,6 @@ class WorkflowWidget(QWidget):
 
             lbl_from_roots.setText(build_output(workflow.roots(), workflow.followers_of))
             lbl_from_leafs.setText(build_output(workflow.leafs(), workflow.sources_of))
-            #print(workflow)
 
         self.timer.start()
 
