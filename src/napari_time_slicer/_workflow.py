@@ -13,14 +13,19 @@ from functools import wraps
 import inspect
 from qtpy.QtCore import QTimer
 
+from napari._qt.qthreading import thread_worker
+import time
+
+METADATA_WORKFLOW_VALID_KEY = "workflow_valid"
+
 class Workflow():
 
     def __init__(self):
         self.tasks = {}
 
     def set(self, name, func_or_data, *args, **kwargs):
-        if name in self.tasks.keys():
-            warnings.warn("Overwriting {}".format(name))
+        #if name in self.tasks.keys():
+        #    warnings.warn("Overwriting {}".format(name))
         if not callable(func_or_data):
             self.tasks[name] = func_or_data
             return
@@ -31,9 +36,16 @@ class Workflow():
 
         self.tasks[name] = tuple([func_or_data] + [value for key, value in bound.arguments.items()])
 
+    def remove(self, name):
+        if name in self.tasks.keys():
+            self.tasks.pop(name)
+
     def get(self, name):
         ## Actually, all this should work with dask. But I don't manage.
         return dask_get(self.tasks, name)
+
+    def get_task(self, name):
+        return self.tasks[name]
 
     def roots(self):
         origins = []
@@ -89,6 +101,65 @@ class WorkflowManager():
 
         self.register_events_to_viewer(viewer)
 
+        # https://napari.org/guides/stable/threading.html
+        @thread_worker
+        def loop_run():
+           while True:  # endless loop
+               time.sleep(2)
+               yield self.update_invalid_layer()
+
+        worker = loop_run()
+
+        def update_layer(whatever):
+            if whatever is not None:
+                name, data = whatever
+                if viewer_has_layer(self.viewer, name):
+                    self.viewer.layers[name].data = data
+
+        # Start the loop
+        worker.yielded.connect(update_layer)
+        worker.start()
+
+    def update_invalid_layer(self):
+        layer = self.search_first_invalid_layer(self.workflow.roots())
+        if layer is None:
+            return
+        print("Detected invalid layer. Recomputing", layer.name)
+        layer.data = np.asarray(self.compute(layer.name))
+        print("Recomputing done", layer.name)
+
+    def compute(self, name):
+        task = list(self.workflow.get_task(name)).copy()
+        function = task[0]
+        arguments = task[1:]
+        for i in range(len(arguments)):
+            a = arguments[i]
+            if isinstance(a, str):
+                if viewer_has_layer(self.viewer, a):
+                    arguments[i] = self.viewer.layers[a].data
+        return function(*arguments)
+
+    def search_first_invalid_layer(self, items):
+        for i in items:
+            if viewer_has_layer(self.viewer, i):
+                layer = self.viewer.layers[i]
+                if layer_invalid(layer):
+                    return layer
+        for i in items:
+            invalid_follower = self.search_first_invalid_layer(self.workflow.followers_of(i))
+            if invalid_follower is not None:
+                return invalid_follower
+
+        return None
+
+    def invalidate(self, items):
+        for f in items:
+            if viewer_has_layer(self.viewer, f):
+                layer = self.viewer.layers[f]
+                layer.metadata[METADATA_WORKFLOW_VALID_KEY] = False
+                self.invalidate(self.workflow.followers_of(f))
+
+
     def register_events_to_viewer(self, viewer: napari.Viewer):
         viewer.dims.events.current_step.connect(self.slider_updated)
 
@@ -97,8 +168,6 @@ class WorkflowManager():
         viewer.layers.selection.events.changed.connect(self.layer_selection_changed)
 
     def update(self, target_layer, function, *args, **kwargs):
-        print("Target:", target_layer)
-        print("function:", function)
 
         def _layer_name_or_value(value, viewer):
             for l in viewer.layers:
@@ -109,24 +178,38 @@ class WorkflowManager():
         args = list(args)
         for i in range(len(args)):
             args[i] = _layer_name_or_value(args[i], self.viewer)
-        if self.viewer in args:
-            args.remove(self.viewer)
+        try:
+            if self.viewer in args:
+                args.remove(self.viewer)
+        except ValueError:
+            pass
         args = tuple(args)
 
         self.workflow.set(target_layer.name, function, *args, **kwargs)
-        print(self.workflow)
+
+        # set result valid
+        target_layer.metadata[METADATA_WORKFLOW_VALID_KEY] = True
+        self.invalidate(self.workflow.followers_of(target_layer.name))
 
     def register_events_to_layer(self, layer):
         layer.events.data.connect(self.layer_data_updated)
 
     def layer_data_updated(self, event):
-        print("Layer data updated", event.value, type(event.value))
+        print("Layer data updated", event.source, type(event.source))
+        event.source.metadata[METADATA_WORKFLOW_VALID_KEY] = True
+        for f in self.workflow.followers_of(str(event.source)):
+            print("Update", f)
+            if viewer_has_layer(self.viewer, f):
+                layer = self.viewer.layers[f]
+                self.invalidate(self.workflow.followers_of(f))
 
     def layer_added(self, event):
         print("Layer added", event.value, type(event.value))
+        self.register_events_to_layer(event.value)
 
     def layer_removed(self, event):
         print("Layer removed", event.value, type(event.value))
+        self.workflow.remove(event.value.name)
 
     def slider_updated(self, event):
         pass
@@ -135,3 +218,16 @@ class WorkflowManager():
     def layer_selection_changed(self, event):
         pass
         #print("Layer selection changed", event)
+
+def viewer_has_layer(viewer, name):
+    try:
+        layer = viewer.layers[name]
+        return layer is not None
+    except KeyError:
+        return False
+
+def layer_invalid(layer):
+    try:
+        return layer.metadata[METADATA_WORKFLOW_VALID_KEY] == False
+    except KeyError:
+        return False

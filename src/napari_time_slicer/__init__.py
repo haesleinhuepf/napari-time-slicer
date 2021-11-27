@@ -60,14 +60,6 @@ def time_slicer(function: Callable) -> Callable:
                                 new_value = new_value[0]
                             bound.arguments[key] = new_value
 
-                        # setup an event that update computation in case the input-data changes
-                        layer = _get_layer_from_data(viewer, value)
-                        if hasattr(function, "updater_" + key):
-                            layer.events.data.disconnect(getattr(function, "updater_" + key))
-                        if layer is not None:
-                            updater = _invoke_later_layer_update(layer, key, worker_function, i, args, kwargs)
-                            setattr(function, "updater_" + key, updater)
-
             # setup an updater which refreshes the view once the viewer dims have changed
             currstep_event = viewer.dims.events.current_step
             def update(event):
@@ -80,40 +72,23 @@ def time_slicer(function: Callable) -> Callable:
 
         # call the decorated function
         result = function(*bound.args, **bound.kwargs)
-        print("Re-executing")
         if viewer is not None and result is not None:
-            print("Viewer exists", function)
             new_name = function.__name__ + " result"
             if hasattr(function, 'target_layer'):
                 function.target_layer.data = result
                 result = None
             elif sig.return_annotation in [ImageData]:
-                print("Returning Image!")
                 function.target_layer = viewer.add_image(result, name=new_name)
                 result = None
             elif sig.return_annotation in [LabelsData]:
-                print("Returning Labels!")
                 function.target_layer = viewer.add_labels(result, name=new_name)
                 result = None
+            else:
+                print("Function has no target layer")
 
             if result is None:
                 workflow_manager.update(function.target_layer, function, *bound.args, **bound.kwargs)
 
-            # after the result has been added to napari, we will go through
-            # napari's layers and find out in which layer the result was stored
-            #if hasattr(function, 'target_layer'):
-            #    print("Target:" + function.target_layer)
-            #    if function.target_layer in viewer.layers:
-            #        function.target_layer.data = result
-            #def later():
-            #    print("Doing later")
-            #    for layer in viewer.layers:
-            #        print("Checking", layer)
-            #        if layer.data is result:
-            #            print("Setting target_layer")
-            #            function.target_layer = layer
-            #        print("Wtf")
-            #QTimer.singleShot(400, later)
 
         return result
 
@@ -128,17 +103,3 @@ def _get_layer_from_data(viewer, data):
             return layer
     return None
 
-def _invoke_later_layer_update(layer, key, worker_function, arg_index, args, kwargs):
-    """
-    Set up a updater when given layer was changed.
-    """
-    def update_layer(event):
-        value = layer.data
-        if arg_index < len(args):
-            args[arg_index] = value
-        else:
-            kwargs[key] = value
-        worker_function(*args, *kwargs)
-
-    layer.events.data.connect(update_layer)
-    return update_layer
