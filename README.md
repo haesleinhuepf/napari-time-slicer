@@ -14,11 +14,17 @@ through the timelapse. Currently, these plugins are using `napari-time-slicer`:
 * [napari-cupy-image-processing](https://www.napari-hub.org/plugins/napari-cupy-image-processing)
 * [napari-pyclesperanto-assistant](https://www.napari-hub.org/plugins/napari-pyclesperanto-assistant)
 * [napari-accelerated-pixel-and-object-classification](https://www.napari-hub.org/plugins/napari-accelerated-pixel-and-object-classification)
+* [napari-mahotas-image-processing](https://www.napari-hub.org/plugins/napari-mahotas-image-processing)
 
 `napari-time-slicer` enables inter-plugin communication, e.g. allowing to combine the plugins listed above in 
 one image processing workflow for segmenting a timelapse dataset:
 
-![](https://github.com/haesleinhuepf/napari-time-slicer/raw/main/images/screencast.gif)
+![](https://github.com/haesleinhuepf/napari-time-slicer/raw/main/images/screencast1.gif)
+
+The workflow can then also be exported as a script:
+
+![](https://github.com/haesleinhuepf/napari-time-slicer/raw/main/images/screencast2.gif)
+
 
 If you want to convert a 3D dataset into as 2D + time dataset, use the 
 menu `Tools > Utilities > Convert 3D stack to 2D timelapse (time-slicer)`. It will turn the 3D dataset to a 4D datset
