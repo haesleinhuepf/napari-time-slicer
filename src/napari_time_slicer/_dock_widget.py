@@ -1,5 +1,5 @@
 from napari_plugin_engine import napari_hook_implementation
-from qtpy.QtWidgets import QWidget, QHBoxLayout, QPushButton, QLayout, QLabel, QTabWidget
+from qtpy.QtWidgets import QWidget, QHBoxLayout, QPushButton, QLayout, QLabel, QTabWidget, QScrollArea
 from qtpy.QtWidgets import QSpacerItem, QSizePolicy
 from qtpy.QtCore import QTimer
 from magicgui import magic_factory
@@ -17,10 +17,14 @@ class WorkflowWidget(QWidget):
 
         lbl_from_roots = QLabel("")
         lbl_from_leafs = QLabel("")
+        lbl_raw = QLabel("")
+        scroll_area_raw = QScrollArea()
+        scroll_area_raw.setWidget(lbl_raw)
 
         tabs = QTabWidget()
         tabs.addTab(lbl_from_roots, "From source")
         tabs.addTab(lbl_from_leafs, "From target")
+        tabs.addTab(scroll_area_raw, "Raw")
 
         self.setLayout(QHBoxLayout())
         self.layout().addWidget(tabs)
@@ -59,7 +63,7 @@ class WorkflowWidget(QWidget):
 
             lbl_from_roots.setText(html(build_output(workflow.roots(), workflow.followers_of)))
             lbl_from_leafs.setText(html(build_output(workflow.leafs(), workflow.sources_of)))
-
+            lbl_raw.setText(str(workflow))
         self.timer.start()
 
 

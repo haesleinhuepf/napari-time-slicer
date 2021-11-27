@@ -17,11 +17,12 @@ from typing import Callable
 from functools import wraps
 import inspect
 from qtpy.QtCore import QTimer
-from ._workflow import WorkflowManager
-
+from ._workflow import WorkflowManager, CURRENT_TIME_FRAME_DATA, _get_layer_from_data, _break_down_4d_to_2d_kwargs
+import time
 
 from functools import partial
 from magicgui import magicgui
+
 
 @curry
 def time_slicer(function: Callable) -> Callable:
@@ -44,6 +45,8 @@ def time_slicer(function: Callable) -> Callable:
             if isinstance(value, napari.Viewer):
                 viewer = value
 
+        start_time = time.time()
+
         if viewer is None:
             warnings.warn("No viewer provided, cannot read current time point.")
         else:
@@ -52,26 +55,26 @@ def time_slicer(function: Callable) -> Callable:
             # in case of 4D-data (timelapse) crop out the current 3D timepoint
             if len(viewer.dims.current_step) == 4:
                 current_timepoint = viewer.dims.current_step[0]
-                for i, (key, value) in enumerate(bound.arguments.items()):
-                    if isinstance(value, np.ndarray) or str(type(value)) in ["<class 'cupy._core.core.ndarray'>", "<class 'dask.array.core.Array'>"]:
-                        if len(value.shape) == 4:
-                            new_value = value[current_timepoint]
-                            if new_value.shape[0] == 1:
-                                new_value = new_value[0]
-                            bound.arguments[key] = new_value
+                _break_down_4d_to_2d_kwargs(bound.arguments, current_timepoint, viewer)
 
             # setup an updater which refreshes the view once the viewer dims have changed
-            currstep_event = viewer.dims.events.current_step
-            def update(event):
-                currstep_event.disconnect(update)
-                worker_function(*args, **kwargs)
-            if hasattr(function, 'updater'):
-                currstep_event.disconnect(function.updater)
-            function.updater = update
-            currstep_event.connect(update)
+            #currstep_event = viewer.dims.events.current_step
+            #def update(event):
+            #    currstep_event.disconnect(update)
+            #    worker_function(*args, **kwargs)
+            #if hasattr(function, 'updater'):
+            #    currstep_event.disconnect(function.updater)
+            #function.updater = update
+            #currstep_event.connect(update)
+
+            print("Extracting a time step took", time.time() - start_time)
+        start_time = time.time()
 
         # call the decorated function
         result = function(*bound.args, **bound.kwargs)
+        print("Computing result took", time.time() - start_time)
+
+        start_time = time.time()
         if viewer is not None and result is not None:
             new_name = function.__name__ + " result"
             if hasattr(function, 'target_layer'):
@@ -86,20 +89,17 @@ def time_slicer(function: Callable) -> Callable:
             else:
                 print("Function has no target layer")
 
+            print("Showing result took", time.time() - start_time)
+
             if result is None:
+                start_time = time.time()
+
                 workflow_manager.update(function.target_layer, function, *bound.args, **bound.kwargs)
+
+                print("Storing workflow step", time.time() - start_time)
 
 
         return result
 
     return worker_function
-
-def _get_layer_from_data(viewer, data):
-    """
-    Returns the layer in viewer that has the given data
-    """
-    for layer in viewer.layers:
-        if layer.data is data:
-            return layer
-    return None
 

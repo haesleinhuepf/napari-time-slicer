@@ -17,6 +17,8 @@ from napari._qt.qthreading import thread_worker
 import time
 
 METADATA_WORKFLOW_VALID_KEY = "workflow_valid"
+CURRENT_TIME_FRAME_DATA = "current_time_frame_data"
+
 
 class Workflow():
     """
@@ -143,7 +145,12 @@ class WorkflowManager():
         layer = self._search_first_invalid_layer(self.workflow.roots())
         if layer is None:
             return
-        layer.data = np.asarray(self._compute(layer.name))
+        print("Updating layer...")
+        try:
+            layer.data = np.asarray(self._compute(layer.name))
+        except Exception:
+            print("Error while updating", layer.name)
+        print("Updating layer... done")
 
     def _compute(self, name):
         task = list(self.workflow.get_task(name)).copy()
@@ -154,6 +161,11 @@ class WorkflowManager():
             if isinstance(a, str):
                 if _viewer_has_layer(self.viewer, a):
                     arguments[i] = self.viewer.layers[a].data
+
+        if len(self.viewer.dims.current_step) == 4:
+            current_timepoint = self.viewer.dims.current_step[0]
+        _break_down_4d_to_2d_args(arguments, current_timepoint, self.viewer)
+
         return function(*arguments)
 
     def _search_first_invalid_layer(self, items):
@@ -185,28 +197,38 @@ class WorkflowManager():
         viewer.layers.selection.events.changed.connect(self._layer_selection_changed)
 
     def update(self, target_layer, function, *args, **kwargs):
+        import time
+        start_time = time.time()
+
 
         def _layer_name_or_value(value, viewer):
-            for l in viewer.layers:
-                if l.data is value:
-                    return l.name
+            layer = _get_layer_from_data(viewer, value)
+            if layer is not None:
+                return layer.name
             return value
 
         args = list(args)
         for i in range(len(args)):
             args[i] = _layer_name_or_value(args[i], self.viewer)
-        try:
-            if self.viewer in args:
-                args.remove(self.viewer)
-        except ValueError:
-            pass
+        if isinstance(args[-1], napari.Viewer):
+            args = args[:-1]
         args = tuple(args)
 
+        print("A", time.time() - start_time)
+        start_time = time.time()
+
         self.workflow.set(target_layer.name, function, *args, **kwargs)
+
+        print("B", time.time() - start_time)
+        start_time = time.time()
 
         # set result valid
         target_layer.metadata[METADATA_WORKFLOW_VALID_KEY] = True
         self.invalidate(self.workflow.followers_of(target_layer.name))
+
+        print("C", time.time() - start_time)
+        start_time = time.time()
+
 
     def _register_events_to_layer(self, layer):
         layer.events.data.connect(self._layer_data_updated)
@@ -229,8 +251,13 @@ class WorkflowManager():
         self.workflow.remove(event.value.name)
 
     def _slider_updated(self, event):
-        pass
-        #print("Slider updated", event.value, type(event.value))
+        slider = event.value
+        print("Slider updated", event.value, type(event.value))
+        if len(slider) == 4: # a time-slider exists
+            for l in self.viewer.layers:
+                if len(l.data.shape) == 4:
+                    self.invalidate(self.workflow.followers_of(l.name))
+        print("Invalidated")
 
     def _layer_selection_changed(self, event):
         pass
@@ -243,8 +270,51 @@ def _viewer_has_layer(viewer, name):
     except KeyError:
         return False
 
+
+def _get_layer_from_data(viewer, data):
+    """
+    Returns the layer in viewer that has the given data
+    """
+    for layer in viewer.layers:
+        if layer.data is data:
+            return layer
+        try:
+            if layer.metadata[CURRENT_TIME_FRAME_DATA] is data:
+                return layer
+        except KeyError:
+            pass
+    return None
+
+
 def _layer_invalid(layer):
     try:
         return layer.metadata[METADATA_WORKFLOW_VALID_KEY] == False
     except KeyError:
         return False
+
+def _break_down_4d_to_2d_kwargs(arguments, current_timepoint, viewer):
+    for key, value in arguments.items():
+        if isinstance(value, np.ndarray) or str(type(value)) in ["<class 'cupy._core.core.ndarray'>",
+                                                                 "<class 'dask.array.core.Array'>"]:
+            if len(value.shape) == 4:
+                layer = _get_layer_from_data(viewer, value)
+                new_value = value[current_timepoint]
+                if new_value.shape[0] == 1:
+                    new_value = new_value[0]
+                arguments[key] = new_value
+                layer.metadata[CURRENT_TIME_FRAME_DATA] = new_value
+
+def _break_down_4d_to_2d_args(arguments, current_timepoint, viewer):
+    print("Dealing with dimesions")
+    for i in range(len(arguments)):
+        value = arguments[i]
+        if isinstance(value, np.ndarray) or str(type(value)) in ["<class 'cupy._core.core.ndarray'>",
+                                                                 "<class 'dask.array.core.Array'>"]:
+            if len(value.shape) == 4:
+                layer = _get_layer_from_data(viewer, value)
+                new_value = value[current_timepoint]
+                if new_value.shape[0] == 1:
+                    new_value = new_value[0]
+                arguments[i] = new_value
+                layer.metadata[CURRENT_TIME_FRAME_DATA] = new_value
+                print("Indeed dealing with dimesions")
