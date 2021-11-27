@@ -147,8 +147,8 @@ class WorkflowManager():
             return
         try:
             layer.data = np.asarray(self._compute(layer.name))
-        except Exception:
-            print("Error while updating", layer.name)
+        except Exception as a:
+            print("Error while updating", layer.name, a)
 
     def _compute(self, name):
         task = list(self.workflow.get_task(name)).copy()
@@ -162,7 +162,7 @@ class WorkflowManager():
 
         if len(self.viewer.dims.current_step) == 4:
             current_timepoint = self.viewer.dims.current_step[0]
-        _break_down_4d_to_2d_args(arguments, current_timepoint, self.viewer)
+            _break_down_4d_to_2d_args(arguments, current_timepoint, self.viewer)
 
         return function(*arguments)
 
