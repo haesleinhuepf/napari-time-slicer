@@ -145,12 +145,10 @@ class WorkflowManager():
         layer = self._search_first_invalid_layer(self.workflow.roots())
         if layer is None:
             return
-        print("Updating layer...")
         try:
             layer.data = np.asarray(self._compute(layer.name))
         except Exception:
             print("Error while updating", layer.name)
-        print("Updating layer... done")
 
     def _compute(self, name):
         task = list(self.workflow.get_task(name)).copy()
@@ -197,10 +195,6 @@ class WorkflowManager():
         viewer.layers.selection.events.changed.connect(self._layer_selection_changed)
 
     def update(self, target_layer, function, *args, **kwargs):
-        import time
-        start_time = time.time()
-
-
         def _layer_name_or_value(value, viewer):
             layer = _get_layer_from_data(viewer, value)
             if layer is not None:
@@ -214,21 +208,11 @@ class WorkflowManager():
             args = args[:-1]
         args = tuple(args)
 
-        print("A", time.time() - start_time)
-        start_time = time.time()
-
         self.workflow.set(target_layer.name, function, *args, **kwargs)
-
-        print("B", time.time() - start_time)
-        start_time = time.time()
 
         # set result valid
         target_layer.metadata[METADATA_WORKFLOW_VALID_KEY] = True
         self.invalidate(self.workflow.followers_of(target_layer.name))
-
-        print("C", time.time() - start_time)
-        start_time = time.time()
-
 
     def _register_events_to_layer(self, layer):
         layer.events.data.connect(self._layer_data_updated)
@@ -305,7 +289,6 @@ def _break_down_4d_to_2d_kwargs(arguments, current_timepoint, viewer):
                 layer.metadata[CURRENT_TIME_FRAME_DATA] = new_value
 
 def _break_down_4d_to_2d_args(arguments, current_timepoint, viewer):
-    print("Dealing with dimesions")
     for i in range(len(arguments)):
         value = arguments[i]
         if isinstance(value, np.ndarray) or str(type(value)) in ["<class 'cupy._core.core.ndarray'>",
@@ -317,4 +300,3 @@ def _break_down_4d_to_2d_args(arguments, current_timepoint, viewer):
                     new_value = new_value[0]
                 arguments[i] = new_value
                 layer.metadata[CURRENT_TIME_FRAME_DATA] = new_value
-                print("Indeed dealing with dimesions")
