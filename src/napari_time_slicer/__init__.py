@@ -17,7 +17,7 @@ from typing import Callable
 from functools import wraps
 import inspect
 from qtpy.QtCore import QTimer
-from ._workflow import WorkflowManager, CURRENT_TIME_FRAME_DATA, _get_layer_from_data, _break_down_4d_to_2d_kwargs
+from ._workflow import WorkflowManager, CURRENT_TIME_FRAME_DATA, _get_layer_from_data, _break_down_4d_to_2d_kwargs, _viewer_has_layer
 import time
 
 from functools import partial
@@ -77,7 +77,7 @@ def time_slicer(function: Callable) -> Callable:
         start_time = time.time()
         if viewer is not None and result is not None:
             new_name = function.__name__ + " result"
-            if hasattr(function, 'target_layer'):
+            if hasattr(function, 'target_layer') and _viewer_has_layer(viewer, function.target_layer.name):
                 function.target_layer.data = result
                 result = None
             elif sig.return_annotation in [ImageData]:
