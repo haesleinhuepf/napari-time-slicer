@@ -80,10 +80,10 @@ def time_slicer(function: Callable) -> Callable:
             if hasattr(function, 'target_layer') and _viewer_has_layer(viewer, function.target_layer.name):
                 function.target_layer.data = result
                 result = None
-            elif sig.return_annotation in [ImageData]:
+            elif sig.return_annotation in [ImageData, "napari.types.ImageData"]:
                 function.target_layer = viewer.add_image(result, name=new_name)
                 result = None
-            elif sig.return_annotation in [LabelsData]:
+            elif sig.return_annotation in [LabelsData, "napari.types.LabelsData"]:
                 function.target_layer = viewer.add_labels(result, name=new_name)
                 result = None
             else:
