@@ -143,9 +143,7 @@ class WorkflowManager():
         layer = self._search_first_invalid_layer(self.workflow.roots())
         if layer is None:
             return
-        print("Detected invalid layer. Recomputing", layer.name)
         layer.data = np.asarray(self._compute(layer.name))
-        print("Recomputing done", layer.name)
 
     def _compute(self, name):
         task = list(self.workflow.get_task(name)).copy()
