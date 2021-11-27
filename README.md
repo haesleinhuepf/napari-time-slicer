@@ -21,7 +21,8 @@ one image processing workflow for segmenting a timelapse dataset:
 
 ![](https://github.com/haesleinhuepf/napari-time-slicer/raw/main/images/screencast1.gif)
 
-The workflow can then also be exported as a script:
+The workflow can then also be exported as a script. The 'Generate Code' button can be found in the `Workflow Viewer`
+that opens when clicking the menu `Tools > Visualization > Workflow Viewer`.
 
 ![](https://github.com/haesleinhuepf/napari-time-slicer/raw/main/images/screencast2.gif)
 
