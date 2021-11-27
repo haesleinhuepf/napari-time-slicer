@@ -33,15 +33,15 @@ class WorkflowWidget(QWidget):
 
         @self.timer.timeout.connect
         def update_layer(*_):
-            from ._workflow import WorkflowManager, layer_invalid, viewer_has_layer
+            from ._workflow import WorkflowManager, _layer_invalid, _viewer_has_layer
             workflow = WorkflowManager.install(napari_viewer).workflow
 
             def build_output(list_of_items, func_to_follow, level=0):
                 output = ""
                 for i in list_of_items:
-                    if viewer_has_layer(self.viewer, i):
+                    if _viewer_has_layer(self.viewer, i):
                         layer = self.viewer.layers[i]
-                        if layer_invalid(layer):
+                        if _layer_invalid(layer):
                             output = output + '<font color="#ff0000">'
                         else:
                             output = output + '<font color="#00ff00">'
