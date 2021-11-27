@@ -241,7 +241,6 @@ class WorkflowManager():
             for l in self.viewer.layers:
                 if len(l.data.shape) == 4:
                     self.invalidate(self.workflow.followers_of(l.name))
-        print("Invalidated")
 
     def _layer_selection_changed(self, event):
         pass
