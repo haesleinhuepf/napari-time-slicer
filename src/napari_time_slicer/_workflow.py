@@ -112,7 +112,10 @@ class WorkflowManager():
             WorkflowManager.viewers_managers = {}
 
         if not viewer in WorkflowManager.viewers_managers.keys():
-           WorkflowManager.viewers_managers[viewer] = WorkflowManager(viewer)
+            WorkflowManager.viewers_managers[viewer] = WorkflowManager(viewer)
+            # visualize intermediate results human-readable from top-left to bottom-right
+            viewer.grid.stride = -1
+
         return WorkflowManager.viewers_managers[viewer]
 
     def __init__(self, viewer: napari.Viewer):
