@@ -22,10 +22,7 @@ one image processing workflow for segmenting a timelapse dataset:
 
 ![](https://github.com/haesleinhuepf/napari-time-slicer/raw/main/images/screencast1.gif)
 
-The workflow can then also be exported as a script. The 'Generate Code' button can be found in the `Workflow Viewer`
-that opens when clicking the menu `Tools > Visualization > Workflow Viewer` if the [napari-script-editor](https://www.napari-hub.org/plugins/napari-script-editor) is installed.
-
-![](https://github.com/haesleinhuepf/napari-time-slicer/raw/main/images/screencast2.gif)
+The workflow can then also be exported as a script. The 'Generate Code' button can be found in the [Workflow Inspector](https://www.napari-hub.org/plugins/napari-workflow-inspector)
 
 
 If you want to convert a 3D dataset into as 2D + time dataset, use the 
