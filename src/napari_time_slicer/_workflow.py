@@ -1,8 +1,4 @@
 
-
-from ._function import napari_experimental_provide_function
-from ._dock_widget import napari_experimental_provide_dock_widget
-
 from napari.types import ImageData, LabelsData
 import napari
 import warnings
