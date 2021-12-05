@@ -33,7 +33,15 @@ class Workflow():
         bound = sig.bind(*args, **kwargs)
         bound.apply_defaults()
 
-        self._tasks[name] = tuple([func_or_data] + [value for key, value in bound.arguments.items()])
+        used_args = [value for key, value in bound.arguments.items()]
+        for i in range(len(used_args)):
+            if callable(used_args[i]):
+                used_args[i] = None
+
+        while (used_args[-1] is None):
+            used_args = used_args[:-1]
+
+        self._tasks[name] = tuple([func_or_data] + used_args)
 
     def remove(self, name):
         if name in self._tasks.keys():
@@ -44,6 +52,12 @@ class Workflow():
 
     def get_task(self, name):
         return self._tasks[name]
+
+    def remove_all_except(self, names):
+        to_remove = [k for k in self._tasks.keys() if k not in names]
+        for r in to_remove:
+            print("removing ", r)
+            del self._tasks[r]
 
     def roots(self):
         """
@@ -209,9 +223,15 @@ class WorkflowManager():
 
         self.workflow.set(target_layer.name, function, *args, **kwargs)
 
+        self.remove_zombies()
+
         # set result valid
         target_layer.metadata[METADATA_WORKFLOW_VALID_KEY] = True
         self.invalidate(self.workflow.followers_of(target_layer.name))
+
+    def remove_zombies(self):
+        layer_names = [layer.name for layer in self.viewer.layers]
+        self.workflow.remove_all_except(layer_names)
 
     def _register_events_to_layer(self, layer):
         layer.events.data.connect(self._layer_data_updated)
