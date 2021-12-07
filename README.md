@@ -25,7 +25,7 @@ one image processing workflow for segmenting a timelapse dataset:
 The workflow can then also be exported as a script. The 'Generate Code' button can be found in the [Workflow Inspector](https://www.napari-hub.org/plugins/napari-workflow-inspector)
 
 
-If you want to convert a 3D dataset into as 2D + time dataset, use the 
+If you want to convert a 3D dataset into a 2D + time dataset, use the 
 menu `Tools > Utilities > Convert 3D stack to 2D timelapse (time-slicer)`. It will turn the 3D dataset to a 4D datset
 where the Z-dimension (index 1) has only 1 element, which will in napari be displayed with a time-slider. Note: It is 
 recommended to remove the original 3D dataset after this conversion.
