@@ -107,7 +107,6 @@ class Workflow():
         return out
 
 
-
 class WorkflowManager():
     """
     The workflow manager is attached to a given napari Viewer once any Workflow step is executed.
@@ -233,11 +232,14 @@ class WorkflowManager():
         layer_names = [layer.name for layer in self.viewer.layers]
         self.workflow.remove_all_except(layer_names)
 
+    def to_python_code(self):
+        return _generate_python_code(self.workflow, self.viewer)
+
     def _register_events_to_layer(self, layer):
         layer.events.data.connect(self._layer_data_updated)
 
     def _layer_data_updated(self, event):
-        print("Layer data updated", event.source, type(event.source))
+        #print("Layer data updated", event.source, type(event.source))
         event.source.metadata[METADATA_WORKFLOW_VALID_KEY] = True
         for f in self.workflow.followers_of(str(event.source)):
             print("Update", f)
@@ -246,16 +248,16 @@ class WorkflowManager():
                 self.invalidate(self.workflow.followers_of(f))
 
     def _layer_added(self, event):
-        print("Layer added", event.value, type(event.value))
+        #print("Layer added", event.value, type(event.value))
         self._register_events_to_layer(event.value)
 
     def _layer_removed(self, event):
-        print("Layer removed", event.value, type(event.value))
+        #print("Layer removed", event.value, type(event.value))
         self.workflow.remove(event.value.name)
 
     def _slider_updated(self, event):
         slider = event.value
-        print("Slider updated", event.value, type(event.value))
+        #print("Slider updated", event.value, type(event.value))
         if len(slider) == 4: # a time-slider exists
             for l in self.viewer.layers:
                 if len(l.data.shape) == 4:
@@ -264,6 +266,7 @@ class WorkflowManager():
     def _layer_selection_changed(self, event):
         pass
         #print("Layer selection changed", event)
+
 
 def _viewer_has_layer(viewer, name):
     try:
@@ -318,3 +321,84 @@ def _break_down_4d_to_2d_args(arguments, current_timepoint, viewer):
                     new_value = new_value[0]
                 arguments[i] = new_value
                 layer.metadata[CURRENT_TIME_FRAME_DATA] = new_value
+
+
+def _generate_python_code(workflow, viewer):
+    imports = []
+    code = []
+
+    roots = workflow.roots()
+
+    def better_str(value):
+        if isinstance(value, str):
+            value = value.replace("[", "_")\
+                .replace("]", "_")\
+                .replace(" ", "_")\
+                .replace("(", "_")\
+                .replace(")", "_")\
+                .replace(".", "_")\
+                .replace("-", "_")
+            if value[0] in ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']:
+                value = "img_" + value
+        return str(value)
+
+    def build_output(list_of_items, func_to_follow):
+        for key in list_of_items:
+            result_name = better_str(key)
+            try:
+                task = workflow.get_task(key)
+                print("TASK", task)
+                function = task[0]
+                arguments = task[1:]
+                if arguments[-1] is None:
+                    arguments = arguments[:-1]
+
+                package_path = function.__module__.split(".")
+                module = package_path[0]
+                new_import = "import " + module
+
+                loaded_module = __import__(module)
+                try:
+                    alias = loaded_module.__common_alias__
+                    new_import = new_import + " as " + alias
+
+                    if len(package_path) == 1:
+                        module = alias
+                    else:
+                        module = alias + "." + ".".join(package_path[1:])
+                except:
+                    pass
+
+                if new_import not in imports:
+                    imports.append(new_import)
+                arg_str = ", ".join([better_str(a) for a in arguments])
+
+                code.append("# " + function.__name__.replace("_", " "))
+                code.append(f"{result_name} = {module}.{function.__name__}({arg_str})")
+                if _viewer_has_layer(viewer, key):
+                    if isinstance(viewer.layers[key], napari.layers.Labels):
+                        code.append(f"viewer.add_labels({result_name}, name='{key}')")
+                    else:
+                        code.append(f"viewer.add_image({result_name}, name='{key}')")
+            except KeyError:
+                code.append(f"{result_name} = viewer.layers['{key}'].data")
+            code.append("")
+            build_output(func_to_follow(key), func_to_follow)
+
+
+    build_output(workflow.roots(), workflow.followers_of)
+    from textwrap import dedent
+
+    preamble = dedent("""
+        import napari
+    
+        if 'viewer' not in globals():
+            viewer = napari.Viewer()
+        """).strip()
+
+    complete_code = "\n".join(imports) + "\n" + preamble + "\n\n" + "\n".join(code) + "\n"
+
+    import autopep8
+    complete_code = autopep8.fix_code(complete_code)
+
+    return complete_code
