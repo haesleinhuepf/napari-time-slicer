@@ -47,7 +47,7 @@ def time_slicer(function: Callable) -> Callable:
         start_time = time.time()
 
         if viewer is None:
-            warnings.warn("No viewer provided, cannot read current time point.")
+            print("No viewer provided, cannot read current time point.")
         else:
             workflow_manager = WorkflowManager.install(viewer)
 
