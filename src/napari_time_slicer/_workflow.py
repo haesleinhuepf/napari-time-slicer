@@ -8,6 +8,7 @@ from typing import Callable
 from functools import wraps
 import inspect
 from qtpy.QtCore import QTimer
+from dask.threaded import get as dask_get
 
 from napari._qt.qthreading import thread_worker
 import time
@@ -52,6 +53,9 @@ class Workflow():
 
     def get_task(self, name):
         return self._tasks[name]
+
+    def set_task(self, name, task):
+        self._tasks[name] = task
 
     def remove_all_except(self, names):
         to_remove = [k for k in self._tasks.keys() if k not in names]

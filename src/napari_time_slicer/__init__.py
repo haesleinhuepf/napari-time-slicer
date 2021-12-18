@@ -47,7 +47,8 @@ def time_slicer(function: Callable) -> Callable:
         start_time = time.time()
 
         if viewer is None:
-            print("No viewer provided, cannot read current time point.")
+            pass
+            #print("No viewer provided, cannot read current time point.")
         else:
             workflow_manager = WorkflowManager.install(viewer)
 
@@ -66,12 +67,12 @@ def time_slicer(function: Callable) -> Callable:
             #function.updater = update
             #currstep_event.connect(update)
 
-            print("Extracting a time step took", time.time() - start_time)
+            #print("Extracting a time step took", time.time() - start_time)
         start_time = time.time()
 
         # call the decorated function
         result = function(*bound.args, **bound.kwargs)
-        print("Computing result took", time.time() - start_time)
+        #print("Computing result took", time.time() - start_time)
 
         start_time = time.time()
         if viewer is not None and result is not None:
