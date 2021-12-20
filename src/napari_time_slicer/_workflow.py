@@ -68,10 +68,13 @@ class Workflow():
         Return all names of images that have no pre-processing steps.
         """
         origins = []
+
+        keys_with_functions = [key for key, task in self._tasks.items() if callable(task[0])]
+
         for result, task in self._tasks.items():
             for source in task:
                 if isinstance(source, str):
-                    if not source in list(self._tasks.keys()):
+                    if not source in keys_with_functions:
                         if source not in origins:
                             origins.append(source)
         return origins
@@ -162,7 +165,10 @@ class WorkflowManager():
         if layer is None:
             return
         try:
-            layer.data = np.asarray(self._compute(layer.name))
+            GUI_KEY = 'magic_gui_widget'
+            self.viewer.layers[layer.name].metadata[GUI_KEY]()
+            #layer.data = np.asarray(self._compute(layer.name))
+            layer.metadata[METADATA_WORKFLOW_VALID_KEY] = True
         except Exception as a:
             print("Error while updating", layer.name, a)
 
@@ -246,7 +252,6 @@ class WorkflowManager():
         #print("Layer data updated", event.source, type(event.source))
         event.source.metadata[METADATA_WORKFLOW_VALID_KEY] = True
         for f in self.workflow.followers_of(str(event.source)):
-            print("Update", f)
             if _viewer_has_layer(self.viewer, f):
                 layer = self.viewer.layers[f]
                 self.invalidate(self.workflow.followers_of(f))
@@ -261,7 +266,7 @@ class WorkflowManager():
 
     def _slider_updated(self, event):
         slider = event.value
-        #print("Slider updated", event.value, type(event.value))
+        print("Slider updated", event.value, type(event.value))
         if len(slider) == 4: # a time-slider exists
             for l in self.viewer.layers:
                 if len(l.data.shape) == 4:
