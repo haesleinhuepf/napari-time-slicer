@@ -1,22 +1,16 @@
 
-__version__ = "0.3.3"
+__version__ = "0.4.0"
 
 from ._function import napari_experimental_provide_function
 
-from napari.types import ImageData, LabelsData
 import napari
-import warnings
-import numpy as np
 from toolz import curry
 from typing import Callable
 from functools import wraps
-import inspect
-from qtpy.QtCore import QTimer
-from ._workflow import WorkflowManager, CURRENT_TIME_FRAME_DATA, _get_layer_from_data, _break_down_4d_to_2d_kwargs, _viewer_has_layer
 import time
-
-from functools import partial
-from magicgui import magicgui
+import inspect
+# most imports here are just for backwards compatbility
+from ._workflow import WorkflowManager, CURRENT_TIME_FRAME_DATA, _get_layer_from_data, _break_down_4d_to_2d_kwargs, _viewer_has_layer
 
 
 @curry
@@ -49,8 +43,6 @@ def time_slicer(function: Callable) -> Callable:
             if len(viewer.dims.current_step) == 4:
                 current_timepoint = viewer.dims.current_step[0]
                 _break_down_4d_to_2d_kwargs(bound.arguments, current_timepoint, viewer)
-
-        start_time = time.time()
 
         # call the decorated function
         result = function(*bound.args, **bound.kwargs)
