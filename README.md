@@ -54,6 +54,18 @@ def threshold_otsu(image:napari.types.ImageData, viewer: napari.Viewer = None) -
 
 You can see a full implementations of this concept in the napari plugins listed above.
 
+If you want to combine slicing in time and processing z-stack images slice-by-slice, you can use the `@slice_by_slice` annotation.
+Make sure, to insert it after `@time_slicer` as shown below and implemented in [napari-pillow-image-processing](https://github.com/haesleinhuepf/napari-pillow-image-processing/blob/4d846b226739843124953f16059241d917cde8e1/src/napari_pillow_image_processing/__init__.py#L151)
+
+```python
+from napari_time_slicer import slice_by_slice
+
+@time_slicer
+@slice_by_slice
+def blur_2d(image:napari.types.ImageData, sigma:float = 1, viewer: napari.Viewer = None) -> napari.types.LabelsData:
+    # ...
+```
+
 ----------------------------------
 
 This [napari] plugin was generated with [Cookiecutter] using [@napari]'s [cookiecutter-napari-plugin] template.
