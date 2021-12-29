@@ -5,6 +5,7 @@
 [![Python Version](https://img.shields.io/pypi/pyversions/napari-time-slicer.svg?color=green)](https://python.org)
 [![tests](https://github.com/haesleinhuepf/napari-time-slicer/workflows/tests/badge.svg)](https://github.com/haesleinhuepf/napari-time-slicer/actions)
 [![codecov](https://codecov.io/gh/haesleinhuepf/napari-time-slicer/branch/main/graph/badge.svg)](https://codecov.io/gh/haesleinhuepf/napari-time-slicer)
+[![Development Status](https://img.shields.io/pypi/status/napari-time-slicer.svg)](https://en.wikipedia.org/wiki/Software_release_life_cycle#Alpha)
 [![napari hub](https://img.shields.io/endpoint?url=https://api.napari-hub.org/shields/napari-time-slicer)](https://napari-hub.org/plugins/napari-time-slicer)
 
 A meta plugin for processing timelapse data timepoint by timepoint. It 
