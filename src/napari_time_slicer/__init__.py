@@ -79,24 +79,47 @@ def time_slicer_dask(function: Callable) -> Callable:
         if viewer is None:
             pass
         else:
-            # in case of 4D-data (timelapse) crop out the current 3D timepoint
-            if len(viewer.dims.current_step) == 4:
-                shape = viewer.dims.nsteps
+            # in case of 4D-data (timelapse) lazily process each 3D frame and add to
+            # dask stack
+            if viewer.dims.ndim == 4:
+
+                # get sample of the output
+                _break_down_4d_to_2d_kwargs(bound.arguments, 0, viewer)
+                output_sample = function(*bound.args, **bound.kwargs)
+
+                # set up lazy processing
                 lazy_processed_image = delayed(function)
+
+                # make the dask stack
                 lazy_arrays = []
                 for i in range(viewer.dims.nsteps[0]):
+                    # needs to be called everytime we want to change the bound args
+                    bound = sig.bind(*args, **kwargs)
+                    bound.apply_defaults()
                     _break_down_4d_to_2d_kwargs(bound.arguments, i, viewer)
+
                     lazy_arrays.append(
                         lazy_processed_image(*bound.args, **bound.kwargs)
                     )
+
+                dask_arrays = [
+                    [da.from_delayed(
+                        delayed_reader, 
+                        shape=output_sample.shape, 
+                        dtype=output_sample.dtype)] 
+                    if len(output_sample.shape) == 2
+                    else da.from_delayed(
+                        delayed_reader, 
+                        shape=output_sample.shape, 
+                        dtype=output_sample.dtype
+                    )
+                    for delayed_reader in lazy_arrays
+                ]
                 # Stack into one large dask.array
                 stack = da.stack(
-                    [
-                        da.from_delayed(delayed_reader, shape=shape, dtype=sample.dtype)
-                        for delayed_reader in lazy_arrays
-                    ], 
+                    dask_arrays, 
                     axis=0)
-                return result
+                return stack
 
         # call the decorated function
         result = function(*bound.args, **bound.kwargs)
@@ -151,5 +174,4 @@ def slice_by_slice(function: Callable) -> Callable:
         return result
 
     return worker_function
-
 
