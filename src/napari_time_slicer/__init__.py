@@ -16,10 +16,21 @@ from ._workflow import WorkflowManager, CURRENT_TIME_FRAME_DATA, _get_layer_from
 
 @curry
 def time_slicer(function: Callable) -> Callable:
+    has_viewer_parameter = False
 
     @wraps(function)
     def worker_function(*args, **kwargs):
         args = list(args)
+
+        # Retrieve the viewer parameter so that we can know which current timepoint is selected
+        viewer = None
+        for key, value in kwargs.items():
+            if isinstance(value, napari.Viewer):
+                viewer = value
+
+        if not has_viewer_parameter:
+            kwargs.pop("viewer")
+
         sig = inspect.signature(function)
         # create mapping from position and keyword arguments to parameters
         # will raise a TypeError if the provided arguments do not match the signature
@@ -29,11 +40,6 @@ def time_slicer(function: Callable) -> Callable:
         # https://docs.python.org/3/library/inspect.html#inspect.BoundArguments.apply_defaults
         bound.apply_defaults()
 
-        # Retrieve the viewer parameter so that we can know which current timepoint is selected
-        viewer = None
-        for key, value in bound.arguments.items():
-            if isinstance(value, napari.Viewer):
-                viewer = value
 
         start_time = time.time()
 
@@ -48,6 +54,18 @@ def time_slicer(function: Callable) -> Callable:
         # call the decorated function
         result = function(*bound.args, **bound.kwargs)
         return result
+
+    # If the function has now "viewer" parameter, we add one so that we can read out the current timepoint later
+    import inspect
+    sig = inspect.signature(worker_function)
+    parameters = []
+    for name, value in sig.parameters.items():
+        if name == "viewer" or name == "napari_viewer" or "napari.viewer.Viewer" in str(value.annotation):
+            has_viewer_parameter = True
+        parameters.append(value)
+    if not has_viewer_parameter:
+        parameters.append(inspect.Parameter("viewer", inspect.Parameter.KEYWORD_ONLY, annotation="napari.viewer.Viewer", default=None))
+    worker_function.__signature__ = inspect.Signature(parameters, return_annotation=sig.return_annotation)
 
     return worker_function
 
