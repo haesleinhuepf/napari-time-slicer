@@ -73,8 +73,6 @@ def time_slicer(function: Callable) -> Callable:
                 current_timepoint = viewer.dims.current_step[0]
 
                 # get sample of the output
-                #_break_down_4d_to_2d_kwargs(bound.arguments, 0, viewer)
-                print("Calling for sample", args, kwargs.keys())
                 output_sample = apply_function_to_timepoint(function, current_timepoint, args, kwargs)
 
                 # set up lazy processing
