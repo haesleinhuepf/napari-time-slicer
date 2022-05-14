@@ -34,7 +34,8 @@ def time_slicer(function: Callable) -> Callable:
             bound.apply_defaults()
 
             # get current time point out of data
-            _break_down_4d_to_2d_kwargs(bound.arguments, timepoint, viewer)
+            if timepoint is not None:
+                _break_down_4d_to_2d_kwargs(bound.arguments, timepoint, viewer)
 
             result = function_to_apply(*bound.args, **bound.kwargs)
             if hasattr(result, "dtype") and hasattr(result, "shape"):
@@ -112,7 +113,7 @@ def time_slicer(function: Callable) -> Callable:
                 return stack
 
         # call the decorated function
-        result = function(*bound.args, **bound.kwargs)
+        result = apply_function_to_timepoint(function, None, args, kwargs)
         return result
 
     # If the function has now "viewer" parameter, we add one so that we can read out the current timepoint later
