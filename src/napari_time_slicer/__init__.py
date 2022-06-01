@@ -29,7 +29,8 @@ def time_slicer(function: Callable) -> Callable:
                 viewer = value
 
         if not has_viewer_parameter:
-            kwargs.pop("viewer")
+            if "viewer" in kwargs.keys():
+                kwargs.pop("viewer")
 
         sig = inspect.signature(function)
         # create mapping from position and keyword arguments to parameters
