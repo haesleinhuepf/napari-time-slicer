@@ -1,5 +1,5 @@
 
-__version__ = "0.4.3"
+__version__ = "0.4.5"
 
 from ._function import napari_experimental_provide_function
 
@@ -52,7 +52,8 @@ def time_slicer(function: Callable) -> Callable:
                 viewer = value
 
         if not has_viewer_parameter:
-            kwargs.pop("viewer")
+            if "viewer" in kwargs.keys():
+                kwargs.pop("viewer")
 
         #sig = inspect.signature(function)
         # create mapping from position and keyword arguments to parameters
