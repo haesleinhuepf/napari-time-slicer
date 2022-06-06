@@ -34,7 +34,7 @@ recommended to remove the original 3D dataset after this conversion.
 
 ## Working with large on-the-fly processed datasets
 
-Using the [napari-assistant](https://www.napari-hub.org/plugins/napari-assistant) it is possible to setup image processing workflows. 
+Using the [napari-assistant](https://www.napari-hub.org/plugins/napari-assistant) complex image processing workflows on timelapse datasets can be setup. 
 In combination with the time-slicer it is possible to process time-lapse data that is larger than available computer memory.
 In case the workflow only consists of images and label-images and out-of-memory issues arise, consider storing intermediate results on disk following this procedure: 
 After setting up the workflow and testing it on a couple of selected frames, store the entire processed timelapse dataset to disk 
