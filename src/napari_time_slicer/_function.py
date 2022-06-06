@@ -7,6 +7,7 @@ from napari_plugin_engine import napari_hook_implementation
 from napari.layers import Image, Labels, Layer
 from napari_tools_menu import register_function, register_action
 import napari
+import tempfile
 
 LayerInput = Annotated[Layer, {"label": "Image"}]
 
@@ -69,8 +70,13 @@ def convert_to_stack4d(layer : LayerInput, viewer: napari.Viewer) -> Layer:
     else:
         return Image(output_data, name="Stack 4D " + layer.name)
 
-@register_function(menu="Utilities > Convert to file-backed timelapse data (time-slicer)")
-def convert_to_file_backed_timelapse(layer : LayerInput, folder_name: str = "", viewer: napari.Viewer = None) -> Layer:
+
+
+@register_function(menu="Utilities > Convert to file-backed timelapse data (time-slicer)",
+                      folder_name = dict(widget_type='FileEdit', mode='d'))
+def convert_to_file_backed_timelapse(layer : LayerInput,
+                                     folder_name: "magicgui.types.PathLike" = "",
+                                     viewer: napari.Viewer = None) -> Layer:
     """
     Save a 4D stack to disk and create a new layer that reads only the current timepoint from disk
     """
@@ -80,11 +86,12 @@ def convert_to_file_backed_timelapse(layer : LayerInput, folder_name: str = "", 
     from skimage.io import imsave
     import os
 
-    if folder_name is None or len(folder_name) == 0:
-        import tempfile
+    folder_name = str(folder_name)
+    if len(folder_name) == 0 or folder_name == ".":
+
         folder_name = tempfile.TemporaryDirectory().name.replace("\\", "/") + "/"
 
-    folder_name = folder_name.replace("\\", "/")
+    folder_name = str(folder_name).replace("\\", "/")
     if not folder_name.endswith("/"):
         folder_name = folder_name + "/"
 
@@ -125,8 +132,9 @@ def convert_to_file_backed_timelapse(layer : LayerInput, folder_name: str = "", 
 
     return load_file_backed_timelapse(folder_name, isinstance(layer, Labels), "File-backed " + layer.name, viewer)
 
-@register_function(menu="Utilities > Load file-backed timelapse data (time-slicer)")
-def load_file_backed_timelapse(folder_name: str = "",
+@register_function(menu="Utilities > Load file-backed timelapse data (time-slicer)",
+                      folder_name = dict(widget_type='FileEdit', mode='d'))
+def load_file_backed_timelapse(folder_name: "magicgui.types.PathLike" = "",
                                 is_labels:bool = False,
                                 name:str = "",
                                 viewer: napari.Viewer = None) -> Layer:
@@ -140,7 +148,7 @@ def load_file_backed_timelapse(folder_name: str = "",
     from dask import delayed
     list_of_loaders = []
 
-    folder_name = folder_name.replace("\\", "/")
+    folder_name = str(folder_name).replace("\\", "/")
     if not folder_name.endswith("/"):
         folder_name = folder_name + "/"
 
