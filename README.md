@@ -40,8 +40,10 @@ After setting up the workflow and testing it on a couple of selected frames, sto
 using the menu `Tools > Utilities > Convert to file-backed timelapse data (time-slicer)`. It will open this dialog, where you can select 
 ![img.png](https://github.com/haesleinhuepf/napari-time-slicer/raw/main/images/convert_to_file_backed_timelapse.png)
 
-Consider entering a folder location in the text field. If not provided, a temporary folder will be created (typically in the User's temp folder in the home directory).
-The data stored in this folder can also be loaded into napari using its `File > Open Folder ...` menu.
+It is recommended to enter a folder location in the text field. 
+If not provided, a temporary folder will be created, typically in the User's temp folder in the home directory. 
+The user is responsible for emptying this folder from time to time.
+The data stored in this folder can also be loaded into napari using its `File > Open Folder...` menu.
 
 Executing this operation can take time as every timepoint of the timelapse is computed. 
 Afterwards, there will be another layer available in napari, which is typically faster to navigate through. 
