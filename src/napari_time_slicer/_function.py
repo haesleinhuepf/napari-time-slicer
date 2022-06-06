@@ -37,8 +37,8 @@ def convert_to_stack4d(layer : LayerInput, viewer: napari.Viewer) -> Layer:
     # in case of 4D-data (timelapse) crop out the current 3D timepoint
     if len(viewer.dims.current_step) != 4:
         raise NotImplementedError("Processing all frames only supports 4D-data")
-    if len(layer.data.shape) != 3:
-        raise NotImplementedError("Processing all frames only supports on-the-fly processed 3D data")
+    if len(layer.data.shape) >= 4:
+        raise NotImplementedError("Processing all frames only supports on-the-fly processed 2D and 3D data")
 
     current_timepoint = viewer.dims.current_step[0]
     max_time = int(viewer.dims.range[-4][1])
@@ -53,6 +53,9 @@ def convert_to_stack4d(layer : LayerInput, viewer: napari.Viewer) -> Layer:
 
         # get the layer data at a specific time point
         result_single_frame = np.asarray(layer.data).copy()
+
+        if len(result_single_frame.shape) == 2:
+            result_single_frame = np.asarray([result_single_frame])
 
         if result is None:
             result = [result_single_frame]
@@ -100,7 +103,7 @@ def convert_to_file_backed_timelapse(layer : LayerInput,
 
     print("Writing to ", folder_name)
 
-    if len(layer.data.shape) == 3: # presumably on-the-fly-processed
+    if len(layer.data.shape) < 4: # presumably on-the-fly-processed
         print("Presumably found an on-the-fly-processed timelapse dataset. Computing frames...")
         # layer = convert_to_stack4d(layer, viewer)
 
@@ -115,6 +118,11 @@ def convert_to_file_backed_timelapse(layer : LayerInput,
 
             # get the layer data at a specific time point
             data = np.asarray(layer.data).copy()
+
+            print("SHAPE", data.shape)
+
+            if len(data.shape) == 2:
+                data = np.asarray([data])
 
             filename = str(folder_name) + "%02d" % (f,) + ".tif"
             imsave(filename, data)
@@ -142,7 +150,7 @@ def load_file_backed_timelapse(folder_name: "magicgui.types.PathLike" = "",
     Load a folder of tif-images where every tif-file corresponds to a frame in a 4D stack.
     """
     import os
-    from skimage.io import imread, imsave
+    from skimage.io import imsave
     from functools import partial
     import dask.array as da
     from dask import delayed
@@ -160,10 +168,10 @@ def load_file_backed_timelapse(folder_name: "magicgui.types.PathLike" = "",
     for filename in file_list:
         if data is None:
             # read first frame to determine size and type
-            data = imread(folder_name + filename)
+            data = _potentially_add_dimension_imread(folder_name + filename)
 
         # create delayed loader
-        loader = da.from_delayed(delayed(partial(imread, folder_name + filename))(), shape=data.shape, dtype=data.dtype)
+        loader = da.from_delayed(delayed(partial(_potentially_add_dimension_imread, folder_name + filename))(), shape=data.shape, dtype=data.dtype)
         list_of_loaders.append(loader)
 
     # Stack into one large dask.array
@@ -178,6 +186,14 @@ def load_file_backed_timelapse(folder_name: "magicgui.types.PathLike" = "",
         return Labels(stack, name=name)
     else:
         return Image(stack, name=name)
+
+def _potentially_add_dimension_imread(filename):
+    from skimage.io import imread
+
+    data = imread(filename)
+    if len(data.shape) == 2:
+        data = np.asarray([data])
+    return data
 
 def _set_timepoint(viewer, current_timepoint):
     variable_timepoint = list(viewer.dims.current_step)
