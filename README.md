@@ -16,6 +16,7 @@ through the timelapse. Currently, these plugins are using `napari-time-slicer`:
 * [napari-pyclesperanto-assistant](https://www.napari-hub.org/plugins/napari-pyclesperanto-assistant)
 * [napari-accelerated-pixel-and-object-classification](https://www.napari-hub.org/plugins/napari-accelerated-pixel-and-object-classification)
 * [napari-simpleitk-image-processing](https://www.napari-hub.org/plugins/napari-simpleitk-image-processing)
+* [napari-simpleitk-image-processing](https://www.napari-hub.org/plugins/napari-simpleitk-image-processing)
 
 `napari-time-slicer` enables inter-plugin communication, e.g. allowing to combine the plugins listed above in 
 one image processing workflow for segmenting a timelapse dataset:
@@ -29,6 +30,24 @@ If you want to convert a 3D dataset into a 2D + time dataset, use the
 menu `Tools > Utilities > Convert 3D stack to 2D timelapse (time-slicer)`. It will turn the 3D dataset to a 4D datset
 where the Z-dimension (index 1) has only 1 element, which will in napari be displayed with a time-slider. Note: It is 
 recommended to remove the original 3D dataset after this conversion.
+
+## Working with large on-the-fly processed datasets
+
+Using the [napari-assistant](https://www.napari-hub.org/plugins/napari-assistant) it is possible to setup image processing workflows. 
+In combination with the time-slicer it is possible to process time-lapse data that is larger than available computer memory.
+In case the workflow only consists of images and label-images and out-of-memory issues arise, consider storing intermediate results on disk following this procedure: 
+After setting up the workflow and testing it on a couple of selected frames, store the entire processed timelapse dataset to disk 
+using the menu `Tools > Utilities > Convert to file-backed timelapse data (time-slicer)`. It will open this dialog, where you can select 
+![img.png](https://github.com/haesleinhuepf/napari-time-slicer/raw/main/images/convert_to_file_backed_timelapse.png)
+
+Consider entering a folder location in the text field. If not provided, a temporary folder will be created (typically in the User's temp folder in the home directory).
+The data stored in this folder can also be loaded into napari using its `File > Open Folder ...` menu.
+
+Executing this operation can take time as every timepoint of the timelapse is computed. 
+Afterwards, there will be another layer available in napari, which is typically faster to navigate through. 
+Consider removing the layer(s) that were only needed to determine the new file-backed layer.
+
+![img.png](https://github.com/haesleinhuepf/napari-time-slicer/raw/main/images/new_file_backed_layer.png)
 
 ## Usage for plugin developers
 
