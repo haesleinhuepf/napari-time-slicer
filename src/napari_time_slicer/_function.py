@@ -73,29 +73,30 @@ def convert_to_stack4d(layer : LayerInput, viewer: napari.Viewer) -> Layer:
         return Image(output_data, name="Stack 4D " + layer.name)
 
 @register_function(menu="Utilities > Convert to file-backed timelapse data (time-slicer)")
-def convert_to_file_backed_timelaps(layer : LayerInput, folder_name: str = "", viewer: napari.Viewer = None) -> Layer:
+def convert_to_file_backed_timelapse(layer : LayerInput, folder_name: str = "", viewer: napari.Viewer = None) -> Layer:
     """
     Save a 4D stack to disk and create a new layer that reads only the current timepoint from disk
     """
     if len(viewer.dims.current_step) != 4:
         raise NotImplementedError("Convert to file-backed timelapse data only supports 4D-data")
 
-    from skimage.io import imread, imsave
-    from functools import partial
-    import dask.array as da
-    from dask import delayed
+    from skimage.io import imsave
     import os
 
     if folder_name is None or len(folder_name) == 0:
         import tempfile
         folder_name = tempfile.TemporaryDirectory().name.replace("\\", "/") + "/"
 
+    folder_name = folder_name.replace("\\", "/")
+    if not folder_name.endswith("/"):
+        folder_name = folder_name + "/"
+
     if not os.path.exists(folder_name):
         os.makedirs(folder_name)
 
     print("Writing to ", folder_name)
 
-    list_of_loaders = []
+
     max_time = layer.data.shape[0]
     for t in range(max_time):
         # save to disk
@@ -103,8 +104,39 @@ def convert_to_file_backed_timelaps(layer : LayerInput, folder_name: str = "", v
         filename = str(folder_name) + "%02d" % (t,) + ".tif"
         imsave(filename, data)
 
+    return load_file_backed_timelapse(folder_name, isinstance(layer, Labels), "File-backed " + layer.name, viewer)
+
+@register_function(menu="Utilities > Load file-backed timelapse data (time-slicer)")
+def load_file_backed_timelapse(folder_name: str = "",
+                                is_labels:bool = False,
+                                name:str = "",
+                                viewer: napari.Viewer = None) -> Layer:
+    """
+    Load a folder of tif-images where every tif-file corresponds to a frame in a 4D stack.
+    """
+    import os
+    from skimage.io import imread, imsave
+    from functools import partial
+    import dask.array as da
+    from dask import delayed
+    list_of_loaders = []
+
+    folder_name = folder_name.replace("\\", "/")
+    if not folder_name.endswith("/"):
+        folder_name = folder_name + "/"
+
+    file_list = os.listdir(folder_name)
+    file_list = sorted(file_list)
+    file_list = [file for file in file_list if file.endswith(".tif")]
+
+    data = None
+    for filename in file_list:
+        if data is None:
+            # read first frame to determine size and type
+            data = imread(folder_name + filename)
+
         # create delayed loader
-        loader = da.from_delayed(delayed(partial(imread, filename))(), shape=data.shape, dtype=data.dtype)
+        loader = da.from_delayed(delayed(partial(imread, folder_name + filename))(), shape=data.shape, dtype=data.dtype)
         list_of_loaders.append(loader)
 
     # Stack into one large dask.array
@@ -112,10 +144,15 @@ def convert_to_file_backed_timelaps(layer : LayerInput, folder_name: str = "", v
         list_of_loaders,
         axis=0)
 
-    if isinstance(layer, Labels):
-        return Labels(stack, name="File-backed " + layer.name)
+    if name is None or len(name) == 0:
+        name = "File-backed " + folder_name.split("/")[-2]
+
+    if is_labels:
+        return Labels(stack, name=name)
     else:
-        return Image(stack, name="File-backed " + layer.name)
+        return Image(stack, name=name)
+
+
 
 # from: https://github.com/haesleinhuepf/napari-skimage-regionprops/blob/b08ac8e5558fe72529378bf076489671c837571f/napari_skimage_regionprops/_all_frames.py#L132
 def _refresh_viewer(viewer):
