@@ -119,8 +119,6 @@ def convert_to_file_backed_timelapse(layer : LayerInput,
             # get the layer data at a specific time point
             data = np.asarray(layer.data).copy()
 
-            print("SHAPE", data.shape)
-
             if len(data.shape) == 2:
                 data = np.asarray([data])
 
