@@ -37,8 +37,7 @@ def convert_to_stack4d(layer : LayerInput, viewer: napari.Viewer) -> Layer:
     if len(viewer.dims.current_step) != 4:
         raise NotImplementedError("Processing all frames only supports 4D-data")
 
-    variable_timepoint = list(viewer.dims.current_step)
-    current_timepoint = variable_timepoint[0]
+    current_timepoint = viewer.dims.current_step[0]
     max_time = int(viewer.dims.range[-4][1])
 
     result = None
@@ -47,9 +46,7 @@ def convert_to_stack4d(layer : LayerInput, viewer: napari.Viewer) -> Layer:
         print("Processing frame", f)
 
         # go to a specific time point
-        variable_timepoint[0] = f
-        viewer.dims.current_step = variable_timepoint
-        _refresh_viewer(viewer)
+        _set_timepoint(viewer, f)
 
         # get the layer data at a specific time point
         result_single_frame = np.asarray(layer.data).copy()
@@ -63,9 +60,7 @@ def convert_to_stack4d(layer : LayerInput, viewer: napari.Viewer) -> Layer:
     print("Output:", output_data.shape)
 
     # go back to the time point selected before
-    variable_timepoint[0] = current_timepoint
-    viewer.dims.current_step = variable_timepoint
-    _refresh_viewer(viewer)
+    _set_timepoint(viewer, current_timepoint)
 
     if isinstance(layer, Labels):
         return Labels(output_data, name="Stack 4D " + layer.name)
@@ -96,13 +91,35 @@ def convert_to_file_backed_timelapse(layer : LayerInput, folder_name: str = "", 
 
     print("Writing to ", folder_name)
 
+    if len(layer.data.shape) == 3: # presumably on-the-fly-processed
+        print("Presumably found an on-the-fly-processed timelapse dataset. Computing frames...")
+        # layer = convert_to_stack4d(layer, viewer)
 
-    max_time = layer.data.shape[0]
-    for t in range(max_time):
-        # save to disk
-        data = layer.data[t]
-        filename = str(folder_name) + "%02d" % (t,) + ".tif"
-        imsave(filename, data)
+        current_timepoint = viewer.dims.current_step[0]
+        max_time = int(viewer.dims.range[-4][1])
+
+        for f in range(max_time):
+            print("Processing frame", f)
+
+            # go to a specific time point
+            _set_timepoint(viewer, f)
+
+            # get the layer data at a specific time point
+            data = np.asarray(layer.data).copy()
+
+            filename = str(folder_name) + "%02d" % (f,) + ".tif"
+            imsave(filename, data)
+
+        # go back to the time point selected before
+        _set_timepoint(viewer, current_timepoint)
+
+    else:
+        max_time = layer.data.shape[0]
+        for f in range(max_time):
+            # save to disk
+            data = layer.data[f]
+            filename = str(folder_name) + "%02d" % (f,) + ".tif"
+            imsave(filename, data)
 
     return load_file_backed_timelapse(folder_name, isinstance(layer, Labels), "File-backed " + layer.name, viewer)
 
@@ -152,7 +169,11 @@ def load_file_backed_timelapse(folder_name: str = "",
     else:
         return Image(stack, name=name)
 
-
+def _set_timepoint(viewer, current_timepoint):
+    variable_timepoint = list(viewer.dims.current_step)
+    variable_timepoint[0] = current_timepoint
+    viewer.dims.current_step = variable_timepoint
+    _refresh_viewer(viewer)
 
 # from: https://github.com/haesleinhuepf/napari-skimage-regionprops/blob/b08ac8e5558fe72529378bf076489671c837571f/napari_skimage_regionprops/_all_frames.py#L132
 def _refresh_viewer(viewer):
