@@ -36,6 +36,8 @@ def convert_to_stack4d(layer : LayerInput, viewer: napari.Viewer) -> Layer:
     # in case of 4D-data (timelapse) crop out the current 3D timepoint
     if len(viewer.dims.current_step) != 4:
         raise NotImplementedError("Processing all frames only supports 4D-data")
+    if len(layer.data.shape) != 3:
+        raise NotImplementedError("Processing all frames only supports on-the-fly processed 3D data")
 
     current_timepoint = viewer.dims.current_step[0]
     max_time = int(viewer.dims.range[-4][1])
