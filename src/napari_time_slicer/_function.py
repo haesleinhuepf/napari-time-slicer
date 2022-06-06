@@ -27,7 +27,7 @@ def convert_to_2d_timelapse(layer : LayerInput, viewer:napari.Viewer = None) -> 
         viewer.dims.current_step = step
     return result
 
-@register_function(menu="Utilities > Convert on-the-fly processed timelapse to 4D stack")
+@register_function(menu="Utilities > Convert on-the-fly processed timelapse to 4D stack (time-slicer)")
 def convert_to_stack4d(layer : LayerInput, viewer: napari.Viewer) -> Layer:
     """
     Go through time (by moving the time-slider in napari) and copy 3D frames of a given layer
@@ -72,7 +72,7 @@ def convert_to_stack4d(layer : LayerInput, viewer: napari.Viewer) -> Layer:
     else:
         return Image(output_data, name="Stack 4D " + layer.name)
 
-@register_function(menu="Utilities > Convert to file-backed timelapse data")
+@register_function(menu="Utilities > Convert to file-backed timelapse data (time-slicer)")
 def convert_to_file_backed_timelaps(layer : LayerInput, folder_name: str = "", viewer: napari.Viewer = None) -> Layer:
     """
     Save a 4D stack to disk and create a new layer that reads only the current timepoint from disk
