@@ -1,5 +1,5 @@
 
-__version__ = "0.4.6"
+__version__ = "0.4.7"
 
 from ._function import napari_experimental_provide_function
 
