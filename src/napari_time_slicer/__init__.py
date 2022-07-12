@@ -6,10 +6,15 @@ from ._function import napari_experimental_provide_function
 import napari
 from toolz import curry
 from typing import Callable
-from functools import wraps
+from functools import wraps, partial
 import time
 import inspect
 import numpy as np
+import dask.array as da
+from dask import delayed
+
+    
+    
 # most imports here are just for backwards compatbility
 from ._workflow import WorkflowManager, CURRENT_TIME_FRAME_DATA, _get_layer_from_data, _break_down_4d_to_2d_kwargs, _viewer_has_layer
 
@@ -20,7 +25,25 @@ def time_slicer(function: Callable) -> Callable:
 
     @wraps(function)
     def worker_function(*args, **kwargs):
-        args = list(args)
+
+        def apply_function_to_timepoint(function_to_apply, timepoint, args, kwargs):
+
+            # determine parameters and apply them
+            sig = inspect.signature(function_to_apply)
+            bound = sig.bind(*args, **kwargs)
+            bound.apply_defaults()
+
+            # get current time point out of data
+            if timepoint is not None:
+                _break_down_4d_to_2d_kwargs(bound.arguments, timepoint, viewer)
+
+            result = function_to_apply(*bound.args, **bound.kwargs)
+            if hasattr(result, "dtype") and hasattr(result, "shape"):
+                result = np.asarray(result)
+            return result
+
+
+        #args = list(args)
 
         # Retrieve the viewer parameter so that we can know which current timepoint is selected
         viewer = None
@@ -37,28 +60,64 @@ def time_slicer(function: Callable) -> Callable:
             if "viewer" in kwargs.keys():
                 kwargs.pop("viewer")
 
-        sig = inspect.signature(function)
+        #sig = inspect.signature(function)
         # create mapping from position and keyword arguments to parameters
         # will raise a TypeError if the provided arguments do not match the signature
         # https://docs.python.org/3/library/inspect.html#inspect.Signature.bind
-        bound = sig.bind(*args, **kwargs)
+        #bound = sig.bind(*args, **kwargs)
         # set default values for missing arguments
         # https://docs.python.org/3/library/inspect.html#inspect.BoundArguments.apply_defaults
-        bound.apply_defaults()
+        #bound.apply_defaults()
 
-
-        start_time = time.time()
 
         if viewer is None:
             pass
         else:
-            # in case of 4D-data (timelapse) crop out the current 3D timepoint
-            if len(viewer.dims.current_step) == 4:
+            # in case of 4D-data (timelapse) lazily process each 3D frame and add to
+            # dask stack
+            if viewer.dims.ndim == 4:
                 current_timepoint = viewer.dims.current_step[0]
-                _break_down_4d_to_2d_kwargs(bound.arguments, current_timepoint, viewer)
+
+                # get sample of the output
+                output_sample = apply_function_to_timepoint(function, current_timepoint, args, kwargs)
+
+                # set up lazy processing
+
+                # make the dask stack
+                lazy_arrays = []
+                for i in range(viewer.dims.nsteps[0]):
+                    # needs to be called everytime we want to change the bound args
+                    #bound = sig.bind(*args, **kwargs)
+                    #bound.apply_defaults()
+                    #_break_down_4d_to_2d_kwargs(bound.arguments, i, viewer)
+                    lazy_processed_image = delayed(
+                        partial(apply_function_to_timepoint, function, current_timepoint, args, kwargs))
+
+                    lazy_arrays.append(
+                        lazy_processed_image()
+                    )
+
+                dask_arrays = [
+                    [da.from_delayed(
+                        delayed_reader,
+                        shape=output_sample.shape,
+                        dtype=output_sample.dtype)]
+                    if len(output_sample.shape) == 2
+                    else da.from_delayed(
+                        delayed_reader,
+                        shape=output_sample.shape,
+                        dtype=output_sample.dtype
+                    )
+                    for delayed_reader in lazy_arrays
+                ]
+                # Stack into one large dask.array
+                stack = da.stack(
+                    dask_arrays,
+                    axis=0)
+                return stack
 
         # call the decorated function
-        result = function(*bound.args, **bound.kwargs)
+        result = apply_function_to_timepoint(function, None, args, kwargs)
         return result
 
     # If the function has now "viewer" parameter, we add one so that we can read out the current timepoint later
@@ -74,7 +133,6 @@ def time_slicer(function: Callable) -> Callable:
     worker_function.__signature__ = inspect.Signature(parameters, return_annotation=sig.return_annotation)
 
     return worker_function
-
 
 @curry
 def slice_by_slice(function: Callable) -> Callable:
@@ -123,5 +181,4 @@ def slice_by_slice(function: Callable) -> Callable:
         return result
 
     return worker_function
-
 
