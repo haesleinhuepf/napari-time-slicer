@@ -73,6 +73,35 @@ def convert_to_stack4d(layer : LayerInput, viewer: napari.Viewer) -> Layer:
     else:
         return Image(output_data, name="Stack 4D " + layer.name)
 
+@register_function(menu="Utilities > Aggregate timepoints in memory (time-slicer)")
+def aggregate(layer : LayerInput, viewer: napari.Viewer = None) -> Layer:
+    """
+    Save a 4D stack to disk and create a new layer that reads only the current timepoint from disk
+    """
+    if len(viewer.dims.current_step) != 4:
+        raise NotImplementedError("Convert to file-backed timelapse data only supports 4D-data")
+
+    from skimage.io import imsave
+    import os
+    import napari_stress
+
+    current_timepoint = viewer.dims.current_step[0]
+    max_time = int(viewer.dims.range[-4][1])
+
+    result = []
+    Converter = napari_stress.TimelapseConverter()
+
+    for f in range(max_time):
+        print("Processing frame", f)
+
+        # go to a specific time point
+        _set_timepoint(viewer, f)
+
+        result.append(layer)
+
+    result4d = Converter.list_of_data_to_data(result, layertype=Layer)
+
+    return result4d
 
 
 @register_function(menu="Utilities > Convert to file-backed timelapse data (time-slicer)",
