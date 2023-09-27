@@ -79,6 +79,7 @@ def aggregate(layer : LayerInput, viewer: napari.Viewer = None) -> Layer:
     """
     Save a 4D stack to disk and create a new layer that reads only the current timepoint from disk
     """
+    from copy import deepcopy
     from .TimelapseConverter import TimelapseConverter
     if len(viewer.dims.current_step) != 4:
         raise NotImplementedError("Aggregation only supports 4D-data")
@@ -94,7 +95,7 @@ def aggregate(layer : LayerInput, viewer: napari.Viewer = None) -> Layer:
         # go to a specific time point
         _set_timepoint(viewer, f)
 
-        result.append(layer.data.copy())
+        result.append(deepcopy(layer.data))
 
     layertype = Converter.tuple_aliases[type(layer)]
     result4d = Converter.convert_list_to_4d_data(result, layertype=layertype)
