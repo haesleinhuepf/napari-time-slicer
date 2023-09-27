@@ -82,14 +82,23 @@ def test_list_of_surfaces_to_surface(points_4d):
     # Optionally, validate the content/structure of surface_4d
     assert np.array_equal(surface_4d[0], points_4d)  # The 4D points data should match
 
-if __name__ == '__main__':
-    test_surface_to_list_of_surfaces(np.array(
-        [
-            [0, 1, 2, 3],
-            [0, 2, 3, 4],
-            [0, 3, 4, 5],
-            [1, 3, 4, 5],
-            [1, 4, 5, 6],
-            [1, 5, 6, 7],
-            ]
-        ))
+
+def test_layer_conversion(points_4d, make_napari_viewer):
+    from napari.layers import Points, Layer
+
+    list_of_points = converter.convert_4d_data_to_list(points_4d, 'napari.types.PointsData')
+
+    layer_list = []
+    for points in list_of_points:
+        new_layer = Points(points, features={
+            'feature_1': np.random.rand(len(points)),
+        })
+        layer_list.append(new_layer)
+
+    # Convert list back to 4D data
+    layer_4d = converter.convert_list_to_4d_data(layer_list, layertype=Layer)
+
+    viewer = make_napari_viewer()
+    viewer.add_layer(layer_4d)
+
+    assert len(viewer.layers) == 1

@@ -280,3 +280,41 @@ class TimelapseConverter:
             return (vertices, faces)
         else:
             return (vertices, faces, values)
+
+    def _list_of_layers_to_layer(
+            self, layers_list: list) -> 'napari.types.LayerDataTuple':
+        import pandas as pd
+
+        new_layer = type(layers_list[0])(ndim=4)
+        layertype = self.tuple_aliases[type(layers_list[0])]
+
+        # process data
+        list_of_data = [layer.data for layer in layers_list]
+        data = self.convert_list_to_4d_data(list_of_data, layertype=layertype)
+        new_layer.data = data
+
+        if hasattr(layers_list[0], 'features'):
+            list_of_features = [layer.features for layer in layers_list]
+
+            # add a frame column to each features dataframe and concatenate
+            for idx, df in enumerate(list_of_features):
+                df.insert(0, 'frame', idx)
+            features = pd.concat(list_of_features)
+            new_layer.features = features
+
+        n_metadata_keys = len(list(layers_list[0].metadata.keys()))
+        if hasattr(layers_list[0], 'metadata') and n_metadata_keys > 0:
+            list_of_metadata = [layer.metadata for layer in layers_list]
+
+            # add a frame column to each metadata dataframe and concatenate
+            for idx, meta in enumerate(list_of_metadata):
+                meta['frame'] = idx
+
+            # go through all keys in the metadata and concatenate the values
+            metadata = {}
+            for key in list_of_metadata[0].keys():
+                metadata[key] = np.concatenate([meta[key] for meta in list_of_metadata])
+
+            new_layer.metadata = metadata
+
+        return new_layer
