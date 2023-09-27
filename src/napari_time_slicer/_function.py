@@ -73,23 +73,20 @@ def convert_to_stack4d(layer : LayerInput, viewer: napari.Viewer) -> Layer:
     else:
         return Image(output_data, name="Stack 4D " + layer.name)
 
+
 @register_function(menu="Utilities > Aggregate timepoints in memory (time-slicer)")
 def aggregate(layer : LayerInput, viewer: napari.Viewer = None) -> Layer:
     """
     Save a 4D stack to disk and create a new layer that reads only the current timepoint from disk
     """
+    from .TimelapseConverter import TimelapseConverter
     if len(viewer.dims.current_step) != 4:
-        raise NotImplementedError("Convert to file-backed timelapse data only supports 4D-data")
+        raise NotImplementedError("Aggregation only supports 4D-data")
 
-    from skimage.io import imsave
-    import os
-    import napari_stress
-
-    current_timepoint = viewer.dims.current_step[0]
     max_time = int(viewer.dims.range[-4][1])
 
     result = []
-    Converter = napari_stress.TimelapseConverter()
+    Converter = TimelapseConverter()
 
     for f in range(max_time):
         print("Processing frame", f)
@@ -97,11 +94,14 @@ def aggregate(layer : LayerInput, viewer: napari.Viewer = None) -> Layer:
         # go to a specific time point
         _set_timepoint(viewer, f)
 
-        result.append(layer)
+        result.append(layer.data.copy())
 
-    result4d = Converter.list_of_data_to_data(result, layertype=Layer)
+    layertype = Converter.tuple_aliases[type(layer)]
+    result4d = Converter.convert_list_to_4d_data(result, layertype=layertype)
 
-    return result4d
+    layer = type(layer)(result4d, name="Aggregated " + layer.name)
+
+    return layer
 
 
 @register_function(menu="Utilities > Convert to file-backed timelapse data (time-slicer)",
