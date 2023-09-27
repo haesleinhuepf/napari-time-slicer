@@ -12,6 +12,7 @@ import inspect
 import numpy as np
 # most imports here are just for backwards compatbility
 from ._workflow import WorkflowManager, CURRENT_TIME_FRAME_DATA, _get_layer_from_data, _break_down_4d_to_2d_kwargs, _viewer_has_layer
+from .TimelapseConverter import TimelapseConverter
 
 
 @curry
