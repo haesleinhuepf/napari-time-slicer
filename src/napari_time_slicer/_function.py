@@ -34,6 +34,8 @@ def convert_to_stack4d(layer : LayerInput, viewer: napari.Viewer) -> Layer:
     Go through time (by moving the time-slider in napari) and copy 3D frames of a given layer
     and store them in a new 4D layer in napari.
     """
+    from copy import deepcopy
+    from .TimelapseConverter import TimelapseConverter
     # in case of 4D-data (timelapse) crop out the current 3D timepoint
     if len(viewer.dims.current_step) != 4:
         raise NotImplementedError("Processing all frames only supports 4D-data")
@@ -52,53 +54,19 @@ def convert_to_stack4d(layer : LayerInput, viewer: napari.Viewer) -> Layer:
         _set_timepoint(viewer, f)
 
         # get the layer data at a specific time point
-        result_single_frame = np.asarray(layer.data).copy()
-
-        if len(result_single_frame.shape) == 2:
-            result_single_frame = np.asarray([result_single_frame])
+        result_single_frame = deepcopy(layer.data)
 
         if result is None:
             result = [result_single_frame]
         else:
             result.append(result_single_frame)
 
-    output_data = np.asarray(result)
-    print("Output:", output_data.shape)
+    Converter = TimelapseConverter()
+    layertype = Converter.tuple_aliases[type(layer)]
+    result4d = Converter.convert_list_to_4d_data(result, layertype=layertype)
 
     # go back to the time point selected before
     _set_timepoint(viewer, current_timepoint)
-
-    if isinstance(layer, Labels):
-        return Labels(output_data, name="Stack 4D " + layer.name)
-    else:
-        return Image(output_data, name="Stack 4D " + layer.name)
-
-
-@register_function(menu="Utilities > Aggregate timepoints in memory (time-slicer)")
-def aggregate(layer : LayerInput, viewer: napari.Viewer = None) -> Layer:
-    """
-    Save a 4D stack to disk and create a new layer that reads only the current timepoint from disk
-    """
-    from copy import deepcopy
-    from .TimelapseConverter import TimelapseConverter
-    if len(viewer.dims.current_step) != 4:
-        raise NotImplementedError("Aggregation only supports 4D-data")
-
-    max_time = int(viewer.dims.range[-4][1])
-
-    result = []
-    Converter = TimelapseConverter()
-
-    for f in range(max_time):
-        print("Processing frame", f)
-
-        # go to a specific time point
-        _set_timepoint(viewer, f)
-
-        result.append(deepcopy(layer.data))
-
-    layertype = Converter.tuple_aliases[type(layer)]
-    result4d = Converter.convert_list_to_4d_data(result, layertype=layertype)
 
     layer = type(layer)(result4d, name="Aggregated " + layer.name)
 
