@@ -1,0 +1,41 @@
+[project]
+name = "napari-time-slicer"
+version = "0.5.0"
+authors = [{name = "Robert Haase", email = "robert.haase@tu-dresden.de"}]
+description = "A meta plugin for processing timelapse data in napari timepoint by timepoint"
+readme = "README.md"
+license = {text = "BSD-3-Clause"}
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Framework :: napari",
+    "Topic :: Scientific/Engineering :: Image Processing",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Operating System :: OS Independent",
+    "License :: OSI Approved :: BSD License"
+]
+dependencies = [
+    "napari-plugin-engine>=0.1.4",
+    "numpy",
+    "toolz",
+    "napari-tools-menu",
+    "napari-workflows"
+]
+
+[project.urls]
+"Homepage" = "https://github.com/haesleinhuepf/napari-time-slicer"
+"Bug Tracker" = "https://github.com/haesleinhuepf/napari-time-slicer/issues"
+"Documentation" = "https://github.com/haesleinhuepf/napari-time-slicer#README.md"
+"Source Code" = "https://github.com/haesleinhuepf/napari-time-slicer"
+"User Support" = "https://github.com/haesleinhuepf/napari-time-slicer/issues"
+
+[project.scripts]
+"napari-time-slicer" = "napari_time_slicer:main"
+
+[build-system]
+requires = ["setuptools>=40.9.0", "wheel"]
+build-backend = "setuptools.build_meta"
