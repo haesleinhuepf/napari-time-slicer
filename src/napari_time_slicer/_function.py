@@ -11,7 +11,7 @@ def napari_experimental_provide_function():
     return [convert_to_2d_timelapse]
 
 @register_function(menu="Utilities > Convert 3D stack to 2D timelapse (time-slicer)")
-def convert_to_2d_timelapse(layer : "napari.layers.Layer", viewer:napari.Viewer = None) -> "napari.layers.Layer":
+def convert_to_2d_timelapse(layer : "napari.layers.Layer", viewer:"napari.Viewer" = None) -> "napari.layers.Layer":
     from napari.layers import Image, Labels, Layer
     if isinstance(layer, Labels):
         result = Labels(layer.data[:,np.newaxis,:,:], name="2d+t " + layer.name)
