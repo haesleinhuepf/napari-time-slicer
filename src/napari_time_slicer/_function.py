@@ -4,19 +4,15 @@ from enum import Enum
 import numpy as np
 from typing_extensions import Annotated
 from napari_plugin_engine import napari_hook_implementation
-from napari.layers import Image, Labels, Layer
 from napari_tools_menu import register_function, register_action
-import napari
-import tempfile
-
-LayerInput = Annotated[Layer, {"label": "Image"}]
 
 @napari_hook_implementation
 def napari_experimental_provide_function():
     return [convert_to_2d_timelapse]
 
 @register_function(menu="Utilities > Convert 3D stack to 2D timelapse (time-slicer)")
-def convert_to_2d_timelapse(layer : LayerInput, viewer:napari.Viewer = None) -> Layer:
+def convert_to_2d_timelapse(layer : "napari.layers.Layer", viewer:"napari.Viewer" = None) -> "napari.layers.Layer":
+    from napari.layers import Image, Labels, Layer
     if isinstance(layer, Labels):
         result = Labels(layer.data[:,np.newaxis,:,:], name="2d+t " + layer.name)
     else:
@@ -29,11 +25,13 @@ def convert_to_2d_timelapse(layer : LayerInput, viewer:napari.Viewer = None) -> 
     return result
 
 @register_function(menu="Utilities > Convert on-the-fly processed timelapse to 4D stack (time-slicer)")
-def convert_to_stack4d(layer : LayerInput, viewer: napari.Viewer) -> Layer:
+def convert_to_stack4d(layer : "napari.layers.Layer", viewer: "napari.Viewer") -> "napari.layers.Layer":
     """
     Go through time (by moving the time-slider in napari) and copy 3D frames of a given layer
     and store them in a new 4D layer in napari.
     """
+    from napari.layers import Image, Labels, Layer
+
     # in case of 4D-data (timelapse) crop out the current 3D timepoint
     if len(viewer.dims.current_step) != 4:
         raise NotImplementedError("Processing all frames only supports 4D-data")
@@ -77,17 +75,20 @@ def convert_to_stack4d(layer : LayerInput, viewer: napari.Viewer) -> Layer:
 
 @register_function(menu="Utilities > Convert to file-backed timelapse data (time-slicer)",
                       folder_name = dict(widget_type='FileEdit', mode='d'))
-def convert_to_file_backed_timelapse(layer : LayerInput,
+def convert_to_file_backed_timelapse(layer : "napari.layers.Layer",
                                      folder_name: "magicgui.types.PathLike" = "",
-                                     viewer: napari.Viewer = None) -> Layer:
+                                     viewer: "napari.Viewer" = None) -> "napari.layers.Layer":
     """
     Save a 4D stack to disk and create a new layer that reads only the current timepoint from disk
     """
+    from napari.layers import Image, Labels, Layer
+    from skimage.io import imsave
+    import os
+    import tempfile
+
     if len(viewer.dims.current_step) != 4:
         raise NotImplementedError("Convert to file-backed timelapse data only supports 4D-data")
 
-    from skimage.io import imsave
-    import os
 
     folder_name = str(folder_name)
     if len(folder_name) == 0 or folder_name == ".":
@@ -143,10 +144,12 @@ def convert_to_file_backed_timelapse(layer : LayerInput,
 def load_file_backed_timelapse(folder_name: "magicgui.types.PathLike" = "",
                                 is_labels:bool = False,
                                 name:str = "",
-                                viewer: napari.Viewer = None) -> Layer:
+                                viewer: "napari.Viewer" = None) -> "napari.layers.Layer":
     """
     Load a folder of tif-images where every tif-file corresponds to a frame in a 4D stack.
     """
+    from napari.layers import Image, Labels, Layer
+
     import os
     from skimage.io import imsave
     from functools import partial
