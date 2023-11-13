@@ -1,5 +1,4 @@
 import numpy as np
-from napari.layers import Points, Surface, Image, Labels, Vectors, Layer
 
 
 class TimelapseConverter:
@@ -7,6 +6,12 @@ class TimelapseConverter:
     Allows converting napari 4D layer data between different formats.
     """
     def __init__(self):
+        from napari.layers import (Points,
+                                   Surface,
+                                   Image,
+                                   Labels,
+                                   Vectors,
+                                   Layer)
 
         # Supported LayerData types
         self.data_to_list_conversion_functions = {
