@@ -30,7 +30,7 @@ def convert_to_stack4d(layer : "napari.layers.Layer", viewer: "napari.Viewer") -
     Go through time (by moving the time-slider in napari) and copy 3D frames of a given layer
     and store them in a new 4D layer in napari.
     """
-    from napari.layers import Image, Labels, Layer
+    from .TimelapseConverter import TimelapseConverter
 
     # in case of 4D-data (timelapse) crop out the current 3D timepoint
     if len(viewer.dims.current_step) != 4:
@@ -49,28 +49,21 @@ def convert_to_stack4d(layer : "napari.layers.Layer", viewer: "napari.Viewer") -
         # go to a specific time point
         _set_timepoint(viewer, f)
 
-        # get the layer data at a specific time point
-        result_single_frame = np.asarray(layer.data).copy()
-
-        if len(result_single_frame.shape) == 2:
-            result_single_frame = np.asarray([result_single_frame])
-
         if result is None:
-            result = [result_single_frame]
+            result = [layer.data]
         else:
-            result.append(result_single_frame)
+            result.append(layer.data)
 
-    output_data = np.asarray(result)
-    print("Output:", output_data.shape)
+    Converter = TimelapseConverter()
+    layertype = Converter.tuple_aliases[type(layer)]
+    result4d = Converter.convert_list_to_4d_data(result, layertype=layertype)
 
     # go back to the time point selected before
     _set_timepoint(viewer, current_timepoint)
 
-    if isinstance(layer, Labels):
-        return Labels(output_data, name="Stack 4D " + layer.name)
-    else:
-        return Image(output_data, name="Stack 4D " + layer.name)
+    layer = type(layer)(result4d, name="Aggregated " + layer.name)
 
+    return layer
 
 
 @register_function(menu="Utilities > Convert to file-backed timelapse data (time-slicer)",
