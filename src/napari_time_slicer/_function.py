@@ -34,7 +34,6 @@ def convert_to_stack4d(layer : LayerInput, viewer: napari.Viewer) -> Layer:
     Go through time (by moving the time-slider in napari) and copy 3D frames of a given layer
     and store them in a new 4D layer in napari.
     """
-    from copy import deepcopy
     from .TimelapseConverter import TimelapseConverter
     # in case of 4D-data (timelapse) crop out the current 3D timepoint
     if len(viewer.dims.current_step) != 4:
@@ -53,13 +52,10 @@ def convert_to_stack4d(layer : LayerInput, viewer: napari.Viewer) -> Layer:
         # go to a specific time point
         _set_timepoint(viewer, f)
 
-        # get the layer data at a specific time point
-        result_single_frame = deepcopy(layer.data)
-
         if result is None:
-            result = [result_single_frame]
+            result = [layer.data]
         else:
-            result.append(result_single_frame)
+            result.append(layer.data)
 
     Converter = TimelapseConverter()
     layertype = Converter.tuple_aliases[type(layer)]
