@@ -97,7 +97,7 @@ You can install `napari-time-slicer` via [pip]:
 
     pip install napari-time-slicer
 
-
+Note: This plugin is not compatible with napari 0.6.0 or later.
 
 To install latest development version :
 
